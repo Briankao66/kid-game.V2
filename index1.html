@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>愷威學習樂園 - iPad 幼兒互動遊戲</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', '微軟正黑體', sans-serif;
+            background-color: #f0f9ff;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #0284c7;
+            text-align: center;
+            font-size: 2.2rem;
+            margin: 5px 0 15px 0;
+            text-shadow: 2px 2px 0px #bae6fd;
+        }
+
+        /* 導覽頁籤 */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .tab-btn {
+            background-color: #ffffff;
+            border: 3px solid #7dd3fc;
+            color: #0369a1;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn.active {
+            background-color: #38bdf8;
+            color: white;
+            border-color: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(56, 189, 248, 0.3);
+        }
+
+        /* 遊戲區域 */
+        .game-container {
+            background-color: white;
+            border-radius: 30px;
+            padding: 25px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 4px solid #e0f2fe;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 提示與進度標籤 */
+        .header-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .progress-tag {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 6px 16px;
+            border-radius: 15px;
+        }
+
+        .instruction-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: #f0fdf4;
+            border: 2px solid #86efac;
+            border-radius: 20px;
+            padding: 12px 24px;
+            margin-bottom: 30px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .instruction-text {
+            font-size: 1.4rem;
+            color: #166534;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .audio-btn {
+            background-color: #4ade80;
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
+        /* 遊戲卡片區域：每次呈現 2 組 */
+        .stage-area {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 100%;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .items-pool, .targets-pool {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            gap: 40px;
+            min-height: 160px;
+        }
+
+        /* 拖曳元素 (iPad 觸控友善尺寸) */
+        .draggable-item {
+            width: 150px;
+            height: 150px;
+            background-color: #fff;
+            border: 4px solid #bae6fd;
+            border-radius: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            touch-action: none;
+            font-size: 4.5rem;
+            transition: transform 0.15s;
+        }
+
+        .draggable-item:active {
+            transform: scale(1.08);
+        }
+
+        /* 虛線目標區域 */
+        .target-box {
+            width: 160px;
+            height: 160px;
+            border: 4px dashed #94a3b8;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .target-box.drag-over {
+            background-color: #e0e7ff;
+            border-color: #6366f1;
+        }
+
+        .target-box.matched {
+            border-style: solid;
+            border-color: #22c55e;
+            background-color: #f0fdf4;
+        }
+
+        .target-label {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #475569;
+            margin-top: 8px;
+            pointer-events: none;
+        }
+
+        .target-icon-placeholder {
+            font-size: 3rem;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        /* 彈窗 Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 35px 45px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            animation: popIn 0.3s ease;
+            max-width: 90vw;
+        }
+
+        .modal-content h2 {
+            color: #16a34a;
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+        }
+
+        .modal-prompt {
+            font-size: 1.3rem;
+            color: #0369a1;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #f0f9ff;
+            padding: 10px 15px;
+            border-radius: 12px;
+        }
+
+        .next-btn {
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎈 愷威學習樂園 🎈</h1>
+
+    <!-- 頁籤選單 -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTheme(0)">🔷 顏色形狀</button>
+        <button class="tab-btn" onclick="switchTheme(1)">🪥 生活用品</button>
+        <button class="tab-btn" onclick="switchTheme(2)">🍎 水果顏色</button>
+        <button class="tab-btn" onclick="switchTheme(3)">🐱 認識動物</button>
+    </div>
+
+    <!-- 遊戲區域 -->
+    <div class="game-container">
+        <div class="header-status">
+            <span class="progress-tag" id="progress-text">第 1 / 8 關</span>
+        </div>
+
+        <div class="instruction-box">
+            <span class="instruction-text" id="instruction-text">題目載入中...</span>
+            <button class="audio-btn" onclick="speakText(document.getElementById('instruction-text').innerText)">🔊</button>
+        </div>
+
+        <div class="stage-area">
+            <!-- 拖曳選項 (上方) -->
+            <div class="items-pool" id="items-pool"></div>
+            <!-- 虛線放置框 (下方) -->
+            <div class="targets-pool" id="targets-pool"></div>
+        </div>
+    </div>
+
+    <!-- 答對過關彈窗 -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 答對了！太棒了！</h2>
+            <div class="modal-prompt" id="modal-prompt">提示語載入中...</div>
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()">前往下一題 ➔</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 語音發音 (Web Speech API) ---
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- 完整資料庫 ---
+        const themeDatabase = [
+            // 0: 顏色形狀 (8組配對)
+            {
+                title: "顏色形狀配對",
+                prompt: "請把形狀放進對應的虛線框裡喔！",
+                questions: [
+                    { items: [{ id: 'circle', icon: '🔴', label: '圓形' }, { id: 'square', icon: '🟦', label: '正方形' }], audioPrompt: "圓形和正方形，配對成功！" },
+                    { items: [{ id: 'triangle', icon: '🔺', label: '三角形' }, { id: 'star', icon: '⭐', label: '星形' }], audioPrompt: "三角形和星星，真棒！" },
+                    { items: [{ id: 'heart', icon: '🩷', label: '愛心' }, { id: 'diamond', icon: '🔷', label: '菱形' }], audioPrompt: "愛心與菱形，放對囉！" },
+                    { items: [{ id: 'oval', icon: '🟡', label: '橢圓形' }, { id: 'green_sq', icon: '🟩', label: '綠方形' }], audioPrompt: "橢圓形與綠色正方形，太厲害了！" },
+                    { items: [{ id: 'orange_circle', icon: '🟠', label: '橘圓形' }, { id: 'purple_sq', icon: '🟪', label: '紫方形' }], audioPrompt: "答對了，顏色形狀都找對了！" },
+                    { items: [{ id: 'brown_sq', icon: '🟫', label: '棕方形' }, { id: 'red_heart', icon: '❤️', label: '紅愛心' }], audioPrompt: "紅愛心與棕色方形，真聰明！" },
+                    { items: [{ id: 'yellow_star', icon: '🌟', label: '閃亮星' }, { id: 'blue_circle', icon: '🔵', label: '藍圓形' }], audioPrompt: "閃亮星星與藍色圓形，真厲害！" },
+                    { items: [{ id: 'white_sq', icon: '⬜', label: '白方形' }, { id: 'black_sq', icon: '⬛', label: '黑方形' }], audioPrompt: "黑與白，配對完成囉！" }
+                ]
+            },
+
+            // 1: 生活用品 (15組配對，完全依據指定清單)
+            {
+                title: "生活用品認知",
+                prompt: "幫忙把生活用品送到正確的位置吧！",
+                questions: [
+                    { items: [{ id: 'toothbrush', icon: '🪥', label: '牙刷' }, { id: 'towel', icon: '🧣', label: '毛巾' }], audioPrompt: "刷刷牙，牙齒好乾淨！/ 洗洗臉，毛巾擦乾淨！" },
+                    { items: [{ id: 'cup', icon: '🥛', label: '水杯' }, { id: 'hat', icon: '🧢', label: '帽子' }], audioPrompt: "多喝水，身體好健康！/ 戴帽子，遮太陽真棒！" },
+                    { items: [{ id: 'spoon', icon: '🥄', label: '湯匙' }, { id: 'shoes', icon: '👟', label: '鞋子' }], audioPrompt: "用湯匙，自己乖乖吃飯！/ 穿上鞋子，一起出門玩！" },
+                    { items: [{ id: 'socks', icon: '🧦', label: '襪子' }, { id: 'soap', icon: '🧼', label: '肥皂' }], audioPrompt: "穿上小襪子，腳腳不冰冷！/ 肥皂搓搓手，病菌全跑光！" },
+                    { items: [{ id: 'comb', icon: '🪮', label: '梳子' }, { id: 'scissors', icon: '✂️', label: '剪刀' }], audioPrompt: "梳梳頭髮，整齊漂亮！/ 安全剪刀，手作好幫手！" },
+                    { items: [{ id: 'backpack', icon: '🎒', label: '書包' }, { id: 'umbrella', icon: '☂️', label: '雨傘' }], audioPrompt: "背上小書包，開心去上學！/ 下雨開大傘，衣服不會濕！" },
+                    { items: [{ id: 'clothes', icon: '👕', label: '衣服' }, { id: 'pants', icon: '👖', label: '褲子' }], audioPrompt: "穿上漂亮衣服，好精神！/ 拉起褲子，自己棒棒的！" },
+                    { items: [{ id: 'clock', icon: '⏰', label: '鬧鐘' }, { id: 'bed', icon: '🛏️', label: '床鋪' }], audioPrompt: "鬧鐘叮叮噹，早起不遲到！/ 躺在小床上，做個好夢！" },
+                    { items: [{ id: 'key', icon: '🔑', label: '鑰匙' }, { id: 'flashlight', icon: '🔦', label: '手電筒' }], audioPrompt: "轉轉小鑰匙，安全鎖好門！/ 亮亮手電筒，照亮小黑夜！" },
+                    { items: [{ id: 'sunglasses', icon: '🕶️', label: '墨鏡' }, { id: 'phone', icon: '📱', label: '手機' }], audioPrompt: "戴上太陽眼鏡，帥氣又遮陽！/ 打電話給爸爸媽媽，報平安！" },
+                    { items: [{ id: 'bowl', icon: '🥣', label: '飯碗' }, { id: 'chopsticks', icon: '🥢', label: '筷子' }], audioPrompt: "用小飯碗，飯飯吃光光！/ 拿好小筷子，夾菜真厲害！" },
+                    { items: [{ id: 'mirror', icon: '🪞', label: '鏡子' }, { id: 'clippers', icon: '💅', label: '指甲剪' }], audioPrompt: "照照小鏡子，笑一笑真可愛！/ 剪剪小指甲，乾乾淨淨！" },
+                    { items: [{ id: 'kettle', icon: '🍶', label: '水壺' }, { id: 'lunchbox', icon: '🍱', label: '餐盒' }], audioPrompt: "帶上小水壺，隨時補充水分！/ 打開小餐盒，美味午餐開動！" },
+                    { items: [{ id: 'broom', icon: '🧹', label: '掃把' }, { id: 'trashcan', icon: '🗑️️', label: '垃圾桶' }], audioPrompt: "拿小掃把，環境擦乾淨！/ 垃圾丟桶裡，真是好乖乖！" },
+                    { items: [{ id: 'chair', icon: '🪑', label: '椅子' }, { id: 'sofa', icon: '🛋️', label: '沙發' }], audioPrompt: "坐好小椅子，看書姿勢棒！/ 坐在大沙發，跟爸爸媽媽一起休息！" }
+                ]
+            },
+
+            // 2: 水果顏色 (15組配對)
+            {
+                title: "水果顏色配對",
+                prompt: "把美味的水果放到正確的位置！",
+                questions: [
+                    { items: [{ id: 'apple', icon: '🍎', label: '紅蘋果' }, { id: 'banana', icon: '🍌', label: '黃香蕉' }], audioPrompt: "香甜的紅蘋果與黃香蕉！" },
+                    { items: [{ id: 'grapes', icon: '🍇', label: '紫葡萄' }, { id: 'watermelon', icon: '🍉', label: '綠西瓜' }], audioPrompt: "紫葡萄與清涼的大西瓜！" },
+                    { items: [{ id: 'orange', icon: '🍊', label: '橘子' }, { id: 'strawberry', icon: '🍓', label: '紅草莓' }], audioPrompt: "酸甜的橘子與可愛草莓！" },
+                    { items: [{ id: 'lemon', icon: '🍋', label: '黃檸檬' }, { id: 'peach', icon: '🍑', label: '粉桃子' }], audioPrompt: "檸檬與水蜜桃，營養又好吃的美味！" },
+                    { items: [{ id: 'pineapple', icon: '🍍', label: '鳳梨' }, { id: 'kiwi', icon: '🥝', label: '奇異果' }], audioPrompt: "鳳梨與奇異果，太棒了！" },
+                    { items: [{ id: 'cherry', icon: '🍒', label: '櫻桃' }, { id: 'avocado', icon: '🥑', label: '酪梨' }], audioPrompt: "小櫻桃與綠色酪梨，答對囉！" },
+                    { items: [{ id: 'blueberry', icon: '🫐', label: '藍莓' }, { id: 'melon', icon: '🍈', label: '哈密瓜' }], audioPrompt: "藍莓與哈密瓜，多汁又香甜！" },
+                    { items: [{ id: 'mango', icon: '🥭', label: '芒果' }, { id: 'pear', icon: '🍐', label: '綠梨子' }], audioPrompt: "愛文芒果與綠色梨子！" },
+                    { items: [{ id: 'coconut', icon: '🥥', label: '椰子' }, { id: 'tomato', icon: '🍅', label: '番茄' }], audioPrompt: "椰子與紅番茄，真聰明！" },
+                    { items: [{ id: 'persimmon', icon: '🍊', label: '柿子' }, { id: 'green_apple', icon: '🍏', label: '青蘋果' }], audioPrompt: "甜柿子與青蘋果，放對位置囉！" },
+                    { items: [{ id: 'papaya', icon: '🥭', label: '木瓜' }, { id: 'pomegranate', icon: '🔴', label: '石榴' }], audioPrompt: "木瓜與石榴，營養滿分！" },
+                    { items: [{ id: 'chestnut', icon: '🌰', label: '栗子' }, { id: 'fig', icon: '🟣', label: '無花果' }], audioPrompt: "栗子與無花果，配對成功！" },
+                    { items: [{ id: 'pitaya', icon: '🌺', label: '火龍果' }, { id: 'starfruit', icon: '⭐', label: '楊桃' }], audioPrompt: "火龍果與星星楊桃，好厲害！" },
+                    { items: [{ id: 'grapefruit', icon: '🍊', label: '葡萄柚' }, { id: 'mulberry', icon: '🫐', label: '桑葚' }], audioPrompt: "葡萄柚與桑葚，答對了！" },
+                    { items: [{ id: 'kumquat', icon: '🟡', label: '金桔' }, { id: 'lychee', icon: '🔴', label: '荔枝' }], audioPrompt: "金桔與荔枝，完成所有水果關卡囉！" }
+                ]
+            },
+
+            // 3: 認識動物 (15組配對，修訂台灣用語)
+            {
+                title: "認識動物配對",
+                prompt: "請找出對應的可愛動物放進去！",
+                questions: [
+                    { items: [{ id: 'cat', icon: '🐱', label: '貓咪' }, { id: 'dog', icon: '🐶', label: '狗狗' }], audioPrompt: "喵喵喵，小貓咪！/ 汪汪汪，小狗狗！" },
+                    { items: [{ id: 'rabbit', icon: '🐰', label: '兔子' }, { id: 'panda', icon: '🐼', label: '熊貓' }], audioPrompt: "蹦蹦跳，小兔子！/ 抱竹子，大熊貓！" },
+                    { items: [{ id: 'bear', icon: '🐻', label: '大熊' }, { id: 'frog', icon: '🐸', label: '青蛙' }], audioPrompt: "抓蜂蜜，大棕熊！/ 呱呱呱，小青蛙！" },
+                    { items: [{ id: 'lion', icon: '🦁', label: '獅子' }, { id: 'monkey', icon: '🐒', label: '小猴子' }], audioPrompt: "萬獸之王，大獅子！/ 愛吃香蕉，小猴子！" },
+                    { items: [{ id: 'duck', icon: '🦆', label: '鴨子' }, { id: 'pig', icon: '🐷', label: '小豬' }], audioPrompt: "呱呱呱，小鴨子！/ 叩叩叩，可愛小豬！" },
+                    { items: [{ id: 'elephant', icon: '🐘', label: '大象' }, { id: 'giraffe', icon: '🦒', label: '長頸鹿' }], audioPrompt: "長鼻子，大象伯伯！/ 長長脖子，長頸鹿！" },
+                    { items: [{ id: 'tiger', icon: '🐯', label: '老虎' }, { id: 'fox', icon: '🦊', label: '狐狸' }], audioPrompt: "吼～威風大老虎！/ 蓬蓬尾巴，小狐狸！" },
+                    { items: [{ id: 'cow', icon: '🐮', label: '乳牛' }, { id: 'sheep', icon: '🐑', label: '小羊' }], audioPrompt: "哞～提供好喝牛奶！/ 咩～毛茸茸小羊！" },
+                    { items: [{ id: 'horse', icon: '🐴', label: '馬' }, { id: 'zebra', icon: '🦓', label: '斑馬' }], audioPrompt: "跑得快，大木馬！/ 黑白條紋，黑白斑馬！" },
+                    { items: [{ id: 'penguin', icon: '🐧', label: '企鵝' }, { id: 'seal', icon: '🦭', label: '海豹' }], audioPrompt: "搖搖擺擺，小企鵝！/ 拍拍手，可愛海豹！" },
+                    { items: [{ id: 'kangaroo', icon: '🦘', label: '袋鼠' }, { id: 'koala', icon: '🐨', label: '無尾熊' }], audioPrompt: "大口袋，袋鼠媽媽！/ 抱樹睡覺，無尾熊！" },
+                    { items: [{ id: 'owl', icon: '🦉', label: '貓頭鷹' }, { id: 'parrot', icon: '🦜', label: '鸚鵡' }], audioPrompt: "大眼睛，貓頭鷹！/ 學說話，彩色鸚鵡！" },
+                    { items: [{ id: 'turtle', icon: '🐢', label: '烏龜' }, { id: 'hedgehog', icon: '🦔', label: '刺蝟' }], audioPrompt: "慢慢爬，小烏龜！/ 圓滾滾，小刺蝟！" },
+                    { items: [{ id: 'dolphin', icon: '🐬', label: '海豚' }, { id: 'whale', icon: '🐳', label: '鯨魚' }], audioPrompt: "跳高高，小海豚！/ 噴噴水，大鯨魚！" },
+                    { items: [{ id: 'squirrel', icon: '🐿️', label: '松鼠' }, { id: 'raccoon', icon: '🦝', label: '浣熊' }], audioPrompt: "吃松果，小松鼠！/ 洗洗手，小浣熊！" }
+                ]
+            }
+        ];
+
+        let currentThemeIndex = 0;
+        let currentQuestionIndex = 0;
+        let matchedInCurrentQ = 0;
+        let draggedElement = null;
+
+        // 切換主題
+        function switchTheme(themeIdx) {
+            currentThemeIndex = themeIdx;
+            currentQuestionIndex = 0;
+
+            document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === themeIdx);
+            });
+
+            loadQuestion();
+        }
+
+        // 載入當前關卡
+        function loadQuestion() {
+            matchedInCurrentQ = 0;
+            const theme = themeDatabase[currentThemeIndex];
+            const qData = theme.questions[currentQuestionIndex];
+
+            // 更新進度與提示語
+            document.getElementById('progress-text').innerText = `第 ${currentQuestionIndex + 1} / ${theme.questions.length} 關`;
+            document.getElementById('instruction-text').innerText = theme.prompt;
+            setTimeout(() => speakText(theme.prompt), 300);
+
+            const itemsPool = document.getElementById('items-pool');
+            const targetsPool = document.getElementById('targets-pool');
+            itemsPool.innerHTML = '';
+            targetsPool.innerHTML = '';
+
+            // 隨機打亂項目的顯示順序
+            const shuffledItems = [...qData.items].sort(() => Math.random() - 0.5);
+
+            shuffledItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'draggable-item';
+                itemEl.draggable = true;
+                itemEl.dataset.id = item.id;
+                itemEl.innerHTML = `<span>${item.icon}</span>`;
+                addDragAndTouchEvents(itemEl);
+                itemsPool.appendChild(itemEl);
+            });
+
+            // 下方虛線目標框 (帶有文字標籤)
+            qData.items.forEach(item => {
+                const targetEl = document.createElement('div');
+                targetEl.className = 'target-box';
+                targetEl.dataset.id = item.id;
+                targetEl.innerHTML = `
+                    <span class="target-icon-placeholder">${item.icon}</span>
+                    <span class="target-label">${item.label}</span>
+                `;
+                addTargetDropEvents(targetEl);
+                targetsPool.appendChild(targetEl);
+            });
+        }
+
+        // iPad Touch 觸控與電腦拖曳支援
+        function addDragAndTouchEvents(el) {
+            el.addEventListener('dragstart', () => { draggedElement = el; });
+
+            let touchOffsetX = 0, touchOffsetY = 0;
+            let originalParent = null;
+
+            el.addEventListener('touchstart', (e) => {
+                draggedElement = el;
+                const touch = e.touches[0];
+                const rect = el.getBoundingClientRect();
+                touchOffsetX = touch.clientX - rect.left;
+                touchOffsetY = touch.clientY - rect.top;
+                originalParent = el.parentNode;
+
+                el.style.position = 'fixed';
+                el.style.zIndex = '1000';
+                moveAt(touch.clientX, touch.clientY);
+            }, { passive: false });
+
+            el.addEventListener('touchmove', (e) => {
+                if (!draggedElement) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                moveAt(touch.clientX, touch.clientY);
+            }, { passive: false });
+
+            el.addEventListener('touchend', (e) => {
+                if (!draggedElement) return;
+                el.style.position = '';
+                el.style.zIndex = '';
+                el.style.left = '';
+                el.style.top = '';
+
+                const touch = e.changedTouches[0];
+                const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+                const targetBox = dropTarget ? dropTarget.closest('.target-box') : null;
+
+                if (targetBox) {
+                    checkMatch(draggedElement, targetBox);
+                } else {
+                    originalParent.appendChild(el);
+                }
+                draggedElement = null;
+            });
+
+            function moveAt(pageX, pageY) {
+                el.style.left = (pageX - touchOffsetX) + 'px';
+                el.style.top = (pageY - touchOffsetY) + 'px';
+            }
+        }
+
+        function addTargetDropEvents(targetEl) {
+            targetEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                targetEl.classList.add('drag-over');
+            });
+
+            targetEl.addEventListener('dragleave', () => {
+                targetEl.classList.remove('drag-over');
+            });
+
+            targetEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                targetEl.classList.remove('drag-over');
+                if (draggedElement) {
+                    checkMatch(draggedElement, targetEl);
+                }
+            });
+        }
+
+        // 配對成功判定
+        function checkMatch(itemEl, targetEl) {
+            if (itemEl.dataset.id === targetEl.dataset.id && !targetEl.classList.contains('matched')) {
+                targetEl.classList.add('matched');
+                targetEl.innerHTML = itemEl.innerHTML;
+                itemEl.remove();
+
+                matchedInCurrentQ++;
+
+                if (matchedInCurrentQ === 2) {
+                    // 本關 2 個都放置成功
+                    setTimeout(() => {
+                        showSuccessModal();
+                    }, 400);
+                } else {
+                    speakText("答對了！還有一個喔！");
+                }
+            } else {
+                speakText("再試一次看看喔！");
+            }
+        }
+
+        // 顯示過關彈窗（包含圖片指定的專屬語音提示語）
+        function showSuccessModal() {
+            const theme = themeDatabase[currentThemeIndex];
+            const qData = theme.questions[currentQuestionIndex];
+            const isLast = currentQuestionIndex === theme.questions.length - 1;
+
+            const modal = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const promptEl = document.getElementById('modal-prompt');
+            const nextBtn = document.getElementById('next-btn');
+
+            promptEl.innerText = qData.audioPrompt;
+
+            if (isLast) {
+                title.innerText = "🏆 太厲害了！全關搞定！";
+                nextBtn.innerText = "再玩一次 🔄";
+                speakText(qData.audioPrompt + " 太厲害了！你完成了所有題目！");
+            } else {
+                title.innerText = "🎉 答對了！太棒了！";
+                nextBtn.innerText = "前往下一題 ➔";
+                speakText(qData.audioPrompt);
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        // 按下前往下一題
+        function nextQuestion() {
+            const theme = themeDatabase[currentThemeIndex];
+            document.getElementById('modal-overlay').style.display = 'none';
+
+            if (currentQuestionIndex < theme.questions.length - 1) {
+                currentQuestionIndex++;
+            } else {
+                currentQuestionIndex = 0;
+            }
+            loadQuestion();
+        }
+
+        // 預設啟動主題一
+        window.onload = () => {
+            switchTheme(0);
+        };
+    </script>
+</body>
+</html>
